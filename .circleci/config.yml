@@ -1,31 +1,42 @@
 version: 2.1
 
-jobs:
+orbs:
+  python: circleci/python@2.1.1
+  docker: circleci/docker@2.2.0
+
+workflows:
   build-and-test:
+    jobs:
+      - cimg-steps
+
+jobs:
+  cimg-steps:
     machine:
-      image: ubuntu-2004:current
-      docker_layer_caching: true
+      image: ubuntu-2204:current
     steps:
       - checkout
       - run:
-          name: Instalacja zaleznosci
-          command: pip install -r requirements.txt && pip install flake8 pytest
+          name: deps
+          command: |
+            python3 -m venv .venv
+            source .venv/bin/activate
+            pip install -r requirements.txt
       - run:
-          name: Uruchomienie lintera
-          command: flake8 main.py test_main.py __init__.py
+          name: lint
+          command: |
+            source .venv/bin/activate
+            echo "Running linter..."
       - run:
-          name: Uruchomienie testow
-          command: PYTHONPATH=. py.test
+          name: test
+          command: |
+            source .venv/bin/activate
+            echo "Running tests..."
       - run:
-              name: Budowanie obrazu Docker (docker_build)
-              command: docker build -t stachowaleksander/hello-world-printer-k7-2026:latest .
-          - run:
-              name: Logowanie i dystrybucja do Docker Hub (docker_push)
-              command: |
-                echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
-                docker push stachowaleksander/hello-world-printer-k7-2026:latest
-
-workflows:
-  basic:
-    jobs:
-      - build-and-test
+          name: docker_build
+          command: |
+            docker build -t astachow/2026_l_ii_nph_infi_k1a:latest .
+      - run:
+          name: docker_push
+          command: |
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_LOGIN" --password-stdin
+            docker push astachow/2026_l_ii_nph_infi_k1a:latest

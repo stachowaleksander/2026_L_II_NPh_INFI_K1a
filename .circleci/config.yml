@@ -1,0 +1,31 @@
+version: 2.1
+
+jobs:
+  build-and-test:
+    machine:
+      image: ubuntu-2004:current
+      docker_layer_caching: true
+    steps:
+      - checkout
+      - run:
+          name: Instalacja zaleznosci
+          command: pip install -r requirements.txt && pip install flake8 pytest
+      - run:
+          name: Uruchomienie lintera
+          command: flake8 main.py test_main.py __init__.py
+      - run:
+          name: Uruchomienie testow
+          command: PYTHONPATH=. py.test
+      - run:
+              name: Budowanie obrazu Docker (docker_build)
+              command: docker build -t stachowaleksander/hello-world-printer-k7-2026:latest .
+          - run:
+              name: Logowanie i dystrybucja do Docker Hub (docker_push)
+              command: |
+                echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin
+                docker push stachowaleksander/hello-world-printer-k7-2026:latest
+
+workflows:
+  basic:
+    jobs:
+      - build-and-test
